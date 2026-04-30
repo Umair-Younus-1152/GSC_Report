@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSC SEO Intelligence Audit</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  /* ── LIGHT MODE (default) ── */
+  :root{
+    --bg:#F5F6FA;--bg2:#FFFFFF;--bg3:#EEF0F6;--card:#FFFFFF;--card2:#F9FAFB;
+    --border:#E2E6F0;--border2:#CBD2E0;
+    --green:#00A85A;--green2:#007A40;--green3:rgba(0,168,90,0.10);--green4:rgba(0,168,90,0.06);
+    --red:#E8334A;--red2:rgba(232,51,74,0.10);
+    --amber:#D48B00;--amber2:rgba(212,139,0,0.12);
+    --blue:#1A6FCC;--blue2:rgba(26,111,204,0.10);
+    --purple:#7C3DBF;--purple2:rgba(124,61,191,0.10);
+    --text:#1A1D2E;--text2:#5A6070;--text3:#9098B0;
+    --nav-w:240px;
+    --chart-grid:rgba(0,0,0,0.06);--chart-tick:#9098B0;
+  }
+
+  /* ── DARK MODE ── */
+  body.dark{
+    --bg:#0B0B0F;--bg2:#111116;--bg3:#16161D;--card:#1A1A24;--card2:#1F1F2E;
+    --border:#2A2A3A;--border2:#333348;
+    --green:#00FF88;--green2:#00CC6A;--green3:rgba(0,255,136,0.12);--green4:rgba(0,255,136,0.06);
+    --red:#FF4D6A;--red2:rgba(255,77,106,0.15);
+    --amber:#FFB800;--amber2:rgba(255,184,0,0.15);
+    --blue:#4D9EFF;--blue2:rgba(77,158,255,0.15);
+    --purple:#B87FFF;--purple2:rgba(184,127,255,0.15);
+    --text:#F0F0F8;--text2:#9090A8;--text3:#5A5A78;
+    --chart-grid:rgba(255,255,255,0.05);--chart-tick:#5A5A78;
+  }
+
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.6;display:flex;min-height:100vh;transition:background 0.3s,color 0.3s}
+
+  /* NAV */
+  nav{width:var(--nav-w);background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;padding:24px 0;z-index:100;overflow-y:auto;transition:background 0.3s,border-color 0.3s}
+  .nav-logo{padding:0 24px 20px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .nav-logo-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .nav-logo .logo-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green3);border:1px solid rgba(0,168,90,0.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--green);letter-spacing:0.5px}
+  body.dark .nav-logo .logo-badge{border-color:rgba(0,255,136,0.3)}
+  .nav-logo .logo-dot{width:8px;height:8px;background:var(--green);border-radius:50%}
+  body.dark .nav-logo .logo-dot{box-shadow:0 0 8px var(--green)}
+
+  /* DARK MODE TOGGLE */
+  .theme-btn{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap;flex-shrink:0}
+  .theme-btn:hover{border-color:var(--green);color:var(--green)}
+  .theme-btn .tb-icon{font-size:13px}
+
+  .nav-section{padding:8px 16px 4px;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;color:var(--text2);text-decoration:none;font-size:13px;font-weight:500;transition:all 0.15s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+  .nav-item:hover,.nav-item.active{color:var(--green);background:var(--green4)}
+  .nav-item.active{border-left:2px solid var(--green)}
+  .nav-item .icon{font-size:15px;width:18px;text-align:center}
+  .nav-badge{margin-left:auto;background:var(--red2);color:var(--red);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+  .nav-badge.warn{background:var(--amber2);color:var(--amber)}
+  .nav-badge.ok{background:var(--green3);color:var(--green)}
+
+  /* MAIN */
+  main{margin-left:var(--nav-w);flex:1;padding:32px;max-width:1400px}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+  .topbar h1{font-size:22px;font-weight:700;letter-spacing:-0.3px}
+  .topbar h1 span{color:var(--green)}
+  .topbar-meta{display:flex;align-items:center;gap:12px}
+  .tag{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px}
+  .tag-green{background:var(--green3);color:var(--green);border:1px solid rgba(0,255,136,0.25)}
+  .tag-red{background:var(--red2);color:var(--red);border:1px solid rgba(255,77,106,0.25)}
+  .tag-amber{background:var(--amber2);color:var(--amber);border:1px solid rgba(255,184,0,0.25)}
+
+  /* SECTIONS */
+  .section{display:none}
+  .section.active{display:block}
+  .section-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  /* KPI GRID */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:32px}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:border-color 0.2s}
+  .kpi:hover{border-color:var(--border2)}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+  .kpi.red::before{background:var(--red)}
+  .kpi.green::before{background:var(--green)}
+  .kpi.amber::before{background:var(--amber)}
+  .kpi.blue::before{background:var(--blue)}
+  .kpi.purple::before{background:var(--purple)}
+  .kpi-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px}
+  .kpi-val{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1}
+  .kpi.red .kpi-val{color:var(--red)}
+  .kpi.green .kpi-val{color:var(--green)}
+  .kpi.amber .kpi-val{color:var(--amber)}
+  .kpi.blue .kpi-val{color:var(--blue)}
+  .kpi.purple .kpi-val{color:var(--purple)}
+  .kpi-change{margin-top:8px;font-size:12px;font-weight:500;color:var(--text2)}
+  .kpi-change .up{color:var(--red)}
+  .kpi-change .down{color:var(--green)}
+
+  /* CARDS */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px;transition:background 0.3s,border-color 0.3s}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .card-title{font-size:14px;font-weight:600;color:var(--text)}
+  .card-subtitle{font-size:12px;color:var(--text3);margin-top:2px}
+
+  /* CHART */
+  .chart-wrap{position:relative;width:100%}
+
+  /* TABLE */
+  .tbl-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:10px 14px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--bg3);color:var(--text)}
+  .td-main{color:var(--text)!important;font-weight:500}
+
+  /* BADGES */
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge-red{background:var(--red2);color:var(--red)}
+  .badge-amber{background:var(--amber2);color:var(--amber)}
+  .badge-green{background:var(--green3);color:var(--green)}
+  .badge-blue{background:var(--blue2);color:var(--blue)}
+  .badge-purple{background:var(--purple2);color:var(--purple)}
+
+  /* PROGRESS BAR */
+  .pbar-wrap{display:flex;align-items:center;gap:12px}
+  .pbar-bg{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+  .pbar-fill{height:100%;border-radius:3px;transition:width 1s ease}
+  .pbar-fill.red{background:var(--red)}
+  .pbar-fill.green{background:var(--green)}
+  .pbar-fill.amber{background:var(--amber)}
+  .pbar-fill.blue{background:var(--blue)}
+  .pbar-val{font-size:12px;font-weight:600;min-width:30px;text-align:right}
+
+  /* ISSUE ROWS */
+  .issue-row{display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+  .issue-row:last-child{border-bottom:none}
+  .issue-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-top:2px}
+  .issue-icon.red{background:var(--red2)}
+  .issue-icon.amber{background:var(--amber2)}
+  .issue-icon.green{background:var(--green3)}
+  .issue-icon.blue{background:var(--blue2)}
+  .issue-body{flex:1}
+  .issue-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .issue-desc{font-size:12px;color:var(--text2);line-height:1.5}
+  .issue-fix{font-size:11px;color:var(--green);margin-top:6px;font-weight:500}
+  .issue-meta{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+
+  /* GRID 2 COL */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+
+  /* TIMELINE */
+  .timeline{display:flex;flex-direction:column;gap:0}
+  .tl-item{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--border)}
+  .tl-item:last-child{border-bottom:none}
+  .tl-num{width:28px;height:28px;border-radius:50%;background:var(--green3);border:1px solid rgba(0,255,136,0.3);color:var(--green);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+  .tl-content h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+  .tl-content p{font-size:12px;color:var(--text2);line-height:1.5}
+
+  /* SCORE RING */
+  .health-ring{display:flex;align-items:center;gap:24px;padding:20px 0}
+  .ring-svg{flex-shrink:0}
+  .health-details{flex:1}
+  .health-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)}
+  .health-item:last-child{border-bottom:none}
+  .health-item-label{font-size:12px;color:var(--text2)}
+  .health-item-val{font-size:12px;font-weight:600}
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+  /* KPI transitions */
+  .kpi{transition:background 0.3s,border-color 0.3s}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-top">
+      <div class="logo-badge">
+        <span class="logo-dot"></span>
+        GSC INTEL
+      </div>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+        <span class="tb-icon" id="themeIcon">🌙</span>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+    <div style="font-size:11px;color:var(--text3)">Apr 30, 2026 · Live Audit</div>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <button class="nav-item active" onclick="showSection('dashboard', this)">
+    <span class="icon">◈</span> Dashboard
+  </button>
+  <button class="nav-item" onclick="showSection('indexing', this)">
+    <span class="icon">◉</span> Indexing Health
+    <span class="nav-badge">432</span>
+  </button>
+
+  <div class="nav-section">Issues</div>
+  <button class="nav-item" onclick="showSection('coverage', this)">
+    <span class="icon">⬡</span> Coverage Issues
+    <span class="nav-badge">7</span>
+  </button>
+  <button class="nav-item" onclick="showSection('technical', this)">
+    <span class="icon">⬢</span> Technical Audit
+    <span class="nav-badge warn">6</span>
+  </button>
+
+  <div class="nav-section">Strategy</div>
+  <button class="nav-item" onclick="showSection('actionplan', this)">
+    <span class="icon">◆</span> Action Plan
+    <span class="nav-badge ok">30d</span>
+  </button>
+  <button class="nav-item" onclick="showSection('roadmap', this)">
+    <span class="icon">◇</span> Growth Roadmap
+  </button>
+
+  <div style="margin-top:auto;padding:16px 24px;border-top:1px solid var(--border);margin-top:32px">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Data period</div>
+    <div style="font-size:12px;color:var(--text2);font-weight:500">31 Jan – 24 Apr 2026</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px">84 days · 7 issue types</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main>
+
+<!-- ─── DASHBOARD ─── -->
+<div id="dashboard" class="section active">
+  <div class="topbar">
+    <div>
+      <h1>SEO Intelligence <span>Audit</span></h1>
+      <div style="font-size:13px;color:var(--text3);margin-top:4px">Google Search Console · Page Indexing Report</div>
+    </div>
+    <div class="topbar-meta">
+      <span class="tag tag-red">432 Not Indexed</span>
+      <span class="tag tag-green">196 Indexed</span>
+      <span class="tag tag-amber">8 Reasons</span>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi red">
+      <div class="kpi-label">Not Indexed</div>
+      <div class="kpi-val">432</div>
+      <div class="kpi-change">Start: 787 &nbsp;<span class="down">▼ 45%</span></div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">Indexed</div>
+      <div class="kpi-val">196</div>
+      <div class="kpi-change">of ~628 total pages</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Alt. Canonical</div>
+      <div class="kpi-val">139</div>
+      <div class="kpi-change">Start: 520 &nbsp;<span class="down">▼ 73%</span></div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">Crawled-Not Indexed</div>
+      <div class="kpi-val">127</div>
+      <div class="kpi-change">Start: 42 &nbsp;<span class="up">▲ 202%</span></div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-label">404 Errors</div>
+      <div class="kpi-val">54</div>
+      <div class="kpi-change">Start: 123 &nbsp;<span class="down">▼ 56%</span></div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">Blocked (robots)</div>
+      <div class="kpi-val">60</div>
+      <div class="kpi-change">Start: 65 &nbsp;<span class="down">▼ 8%</span></div>
+    </div>
+  </div>
+
+  <!-- Overview chart -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Not-Indexed Pages — Trend Overview</div>
+        <div class="card-subtitle">Weekly snapshot · Jan 31 – Apr 24, 2026</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:10px;height:3px;background:#FF4D6A;display:inline-block;border-radius:2px"></span>Total</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:10px;height:3px;background:#FFB800;display:inline-block;border-radius:2px"></span>Alt.Canonical</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:10px;height:3px;background:#4D9EFF;display:inline-block;border-radius:2px"></span>Crawled-NI</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span style="width:10px;height:3px;background:#00FF88;display:inline-block;border-radius:2px"></span>404s</span>
+      </div>
+    </div>
+    <div class="chart-wrap" style="height:280px">
+      <canvas id="trendChart" role="img" aria-label="Line chart showing not-indexed pages declining from 787 to 404 between Jan and Apr 2026, with crawled-not-indexed rising from 42 to 127">GSC not-indexed trend data.</canvas>
+    </div>
+  </div>
+
+  <!-- Distribution -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Current Issue Distribution</div></div>
+      <div class="chart-wrap" style="height:230px">
+        <canvas id="donutChart" role="img" aria-label="Donut chart showing Alt.Canonical 34%, Crawled-Not Indexed 31%, 404 13%, Blocked 15%, Noindex 5%, Other 2%">Issue distribution breakdown.</canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Issue Progress — Jan vs Apr</div></div>
+      <div style="padding-top:8px">
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text2)">Alt. Canonical</span><span style="font-size:12px;font-weight:600;color:var(--amber)">139 / 520</span></div>
+          <div class="pbar-wrap"><div class="pbar-bg"><div class="pbar-fill amber" style="width:27%"></div></div></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text2)">Crawled – Not Indexed</span><span style="font-size:12px;font-weight:600;color:var(--red)">127 / 42</span></div>
+          <div class="pbar-wrap"><div class="pbar-bg"><div class="pbar-fill red" style="width:100%"></div></div></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text2)">Not Found (404)</span><span style="font-size:12px;font-weight:600;color:var(--green)">54 / 123</span></div>
+          <div class="pbar-wrap"><div class="pbar-bg"><div class="pbar-fill green" style="width:44%"></div></div></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text2)">Blocked by robots.txt</span><span style="font-size:12px;font-weight:600;color:var(--blue)">60 / 65</span></div>
+          <div class="pbar-wrap"><div class="pbar-bg"><div class="pbar-fill blue" style="width:92%"></div></div></div>
+        </div>
+        <div style="margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;color:var(--text2)">Excluded by noindex</span><span style="font-size:12px;font-weight:600;color:var(--green)">22 / 35</span></div>
+          <div class="pbar-wrap"><div class="pbar-bg"><div class="pbar-fill green" style="width:63%"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── INDEXING ─── -->
+<div id="indexing" class="section">
+  <div class="topbar">
+    <div><h1>Indexing <span>Health</span></h1><div style="font-size:13px;color:var(--text3);margin-top:4px">Coverage status · All exclusion reasons</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Indexing Overview</div></div>
+    <div class="health-ring">
+      <svg class="ring-svg" width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="50" fill="none" stroke="#1F1F2E" stroke-width="14"/>
+        <circle cx="60" cy="60" r="50" fill="none" stroke="#FF4D6A" stroke-width="14" stroke-dasharray="314 314" stroke-dashoffset="99" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+        <circle cx="60" cy="60" r="50" fill="none" stroke="#00FF88" stroke-width="14" stroke-dasharray="98 314" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 60 60)" style="stroke-dashoffset:0;transform-origin:60px 60px;transform:rotate(124deg)"/>
+        <text x="60" y="55" text-anchor="middle" fill="#F0F0F8" font-size="22" font-weight="800">31%</text>
+        <text x="60" y="70" text-anchor="middle" fill="#9090A8" font-size="9">indexed</text>
+      </svg>
+      <div class="health-details">
+        <div class="health-item"><span class="health-item-label">Total pages detected</span><span class="health-item-val" style="color:var(--text)">~628</span></div>
+        <div class="health-item"><span class="health-item-label">Indexed by Google</span><span class="health-item-val" style="color:var(--green)">196</span></div>
+        <div class="health-item"><span class="health-item-label">Not indexed (8 reasons)</span><span class="health-item-val" style="color:var(--red)">432</span></div>
+        <div class="health-item"><span class="health-item-label">Crawled but rejected</span><span class="health-item-val" style="color:var(--red)">127 ▲ CRITICAL</span></div>
+        <div class="health-item"><span class="health-item-label">Indexing ratio</span><span class="health-item-val" style="color:var(--amber)">31.2% (target: 70%+)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">All Exclusion Reasons — Full Breakdown</div></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Reason</th><th>Source</th><th>Jan 31</th><th>Apr 24</th><th>Change</th><th>Trend</th><th>Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="td-main">Alternative page with proper canonical tag</td><td>Website</td><td>520</td><td>139</td><td style="color:var(--green)">▼ 381</td><td><span class="badge badge-green">Improving</span></td><td><span class="badge badge-red">Critical</span></td></tr>
+          <tr><td class="td-main">Crawled – currently not indexed</td><td>Google</td><td>42</td><td>127</td><td style="color:var(--red)">▲ 85</td><td><span class="badge badge-red">Worsening</span></td><td><span class="badge badge-red">Critical</span></td></tr>
+          <tr><td class="td-main">Not found (404)</td><td>Website</td><td>123</td><td>54</td><td style="color:var(--green)">▼ 69</td><td><span class="badge badge-green">Improving</span></td><td><span class="badge badge-amber">High</span></td></tr>
+          <tr><td class="td-main">Blocked by robots.txt</td><td>Website</td><td>65</td><td>60</td><td style="color:var(--green)">▼ 5</td><td><span class="badge badge-green">Stable</span></td><td><span class="badge badge-amber">High</span></td></tr>
+          <tr><td class="td-main">Excluded by 'noindex' tag</td><td>Website</td><td>35</td><td>22</td><td style="color:var(--green)">▼ 13</td><td><span class="badge badge-green">Improving</span></td><td><span class="badge badge-blue">Medium</span></td></tr>
+          <tr><td class="td-main">Duplicate, Google chose different canonical</td><td>Google</td><td>0</td><td>1</td><td style="color:var(--red)">▲ 1</td><td><span class="badge badge-amber">Watch</span></td><td><span class="badge badge-blue">Low</span></td></tr>
+          <tr><td class="td-main">Discovered – currently not indexed</td><td>Google</td><td>2</td><td>1</td><td style="color:var(--green)">▼ 1</td><td><span class="badge badge-green">Stable</span></td><td><span class="badge badge-blue">Low</span></td></tr>
+          <tr style="background:rgba(255,77,106,0.04)"><td class="td-main" style="font-weight:700;color:var(--text)">TOTAL NOT INDEXED</td><td></td><td style="font-weight:600">787</td><td style="font-weight:600;color:var(--red)">404</td><td style="color:var(--green);font-weight:600">▼ 383</td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Crawled-Not Indexed — Rising Alarm</div></div>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="crawledChart" role="img" aria-label="Line chart showing crawled-not-indexed pages rising from 42 in January to 127 in April 2026">Crawled not indexed trend rising over time.</canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ─── COVERAGE ─── -->
+<div id="coverage" class="section">
+  <div class="topbar">
+    <div><h1>Coverage <span>Issues</span></h1><div style="font-size:13px;color:var(--text3);margin-top:4px">Deep-dive into each exclusion type</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Issue 1 — Alternative Page with Proper Canonical Tag</div><div class="card-subtitle">Website-reported · 139 pages currently affected</div></div>
+      <span class="badge badge-amber">Improving</span>
+    </div>
+    <div class="issue-row">
+      <div class="issue-icon amber">📄</div>
+      <div class="issue-body">
+        <div class="issue-title">What it means</div>
+        <div class="issue-desc">These pages have a canonical tag pointing to a different URL. Google is respecting the canonical and indexing the canonical target, not these pages. Down from 520 → 139 (73% improvement) but 139 still represents significant indexable content being excluded.</div>
+        <div class="issue-fix">Fix: Audit all 139 pages. Ensure canonical tags are intentional. If any pages are canonical-ing to wrong targets, fix the tag. If pages are duplicate, consolidate content.</div>
+        <div class="issue-meta"><span class="badge badge-amber">Impact: High</span><span class="badge badge-blue">Effort: Medium</span><span class="badge badge-amber">139 URLs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Issue 2 — Crawled, Currently Not Indexed</div><div class="card-subtitle">Google-reported · 127 pages · RISING TREND ⚠</div></div>
+      <span class="badge badge-red">Critical</span>
+    </div>
+    <div class="issue-row">
+      <div class="issue-icon red">⚠</div>
+      <div class="issue-body">
+        <div class="issue-title">What it means — and why it's the #1 priority</div>
+        <div class="issue-desc">Google is actively crawling these pages but choosing NOT to index them. This is a content quality signal. Google's algorithms are judging these pages as low-value, thin, duplicate-intent, or not meeting E-E-A-T standards. The count rose from 42 → 127 (+202%) — Google is getting more selective about your content over time.</div>
+        <div class="issue-fix">Fix: Run a content audit on all 127 URLs. Check for thin content (&lt;500 words), duplicate headings/meta, poor E-E-A-T, keyword stuffing, missing author/date signals, no unique value. Improve or merge/redirect weak pages. Submit improved pages via URL Inspection tool.</div>
+        <div class="issue-meta"><span class="badge badge-red">Impact: Critical</span><span class="badge badge-red">Effort: High</span><span class="badge badge-red">127 URLs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Issue 3 — Not Found (404)</div><div class="card-subtitle">Website-reported · 54 pages · improving</div></div>
+      <span class="badge badge-green">Improving</span>
+    </div>
+    <div class="issue-row">
+      <div class="issue-icon blue">✕</div>
+      <div class="issue-body">
+        <div class="issue-title">What it means</div>
+        <div class="issue-desc">These URLs return a 404 response. They may have been deleted, moved without redirects, or were never live. Down from 123 → 54 — good progress. Remaining 54 should be resolved to recover any lost link equity and fix broken user journeys.</div>
+        <div class="issue-fix">Fix: Export the 404 list from GSC. For each URL, either: (a) restore the page if valuable, (b) set up a 301 redirect to the most relevant live page, or (c) ensure they return true 404 (not soft-404). Update all internal links pointing to dead URLs.</div>
+        <div class="issue-meta"><span class="badge badge-amber">Impact: Medium</span><span class="badge badge-green">Effort: Low</span><span class="badge badge-blue">54 URLs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Issue 4 — Blocked by robots.txt</div><div class="card-subtitle">Website-reported · 60 pages · mostly stable</div></div>
+      <span class="badge badge-green">Stable</span>
+    </div>
+    <div class="issue-row">
+      <div class="issue-icon amber">🤖</div>
+      <div class="issue-body">
+        <div class="issue-title">What it means</div>
+        <div class="issue-desc">60 pages are disallowed by robots.txt rules. Most may be intentional (admin, staging, duplicate parameterized URLs). However there's a risk that important pages are accidentally blocked — especially if the number briefly spiked to 82 before settling at 60.</div>
+        <div class="issue-fix">Fix: Review your robots.txt against these 60 URLs. Confirm each blocked page is intentionally excluded. Remove Disallow rules for any valuable indexable pages accidentally caught. Pay special attention to JS/CSS resources — blocking them can prevent Google rendering your pages correctly.</div>
+        <div class="issue-meta"><span class="badge badge-amber">Impact: Medium</span><span class="badge badge-green">Effort: Low</span><span class="badge badge-blue">60 URLs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Issue 5 — Excluded by Noindex Tag</div><div class="card-subtitle">Website-reported · 22 pages</div></div>
+      <span class="badge badge-green">Improving</span>
+    </div>
+    <div class="issue-row">
+      <div class="issue-icon amber">🚫</div>
+      <div class="issue-body">
+        <div class="issue-title">What it means</div>
+        <div class="issue-desc">22 pages have a noindex directive in their HTML or HTTP headers. Down from 35 → 22. These pages are explicitly excluded from Google's index. Review each to determine if the noindex was intentional or an error (e.g., left over from a staging deployment).</div>
+        <div class="issue-fix">Fix: Check CMS settings, page-level meta robots tags, and HTTP X-Robots-Tag headers. Remove noindex from any pages that should be indexed. Especially check category/tag pages, product pages, and any content pages that may have been accidentally tagged.</div>
+        <div class="issue-meta"><span class="badge badge-blue">Impact: Medium</span><span class="badge badge-green">Effort: Low</span><span class="badge badge-green">22 URLs</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TECHNICAL ─── -->
+<div id="technical" class="section">
+  <div class="topbar">
+    <div><h1>Technical <span>SEO Audit</span></h1><div style="font-size:13px;color:var(--text3);margin-top:4px">Identified issues with fix recommendations</div></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi red"><div class="kpi-label">Critical Issues</div><div class="kpi-val">2</div><div class="kpi-change">Immediate action needed</div></div>
+    <div class="kpi amber"><div class="kpi-label">High Priority</div><div class="kpi-val">2</div><div class="kpi-change">Fix within 2 weeks</div></div>
+    <div class="kpi blue"><div class="kpi-label">Medium Priority</div><div class="kpi-val">2</div><div class="kpi-change">Fix within 30 days</div></div>
+    <div class="kpi green"><div class="kpi-label">Health Score</div><div class="kpi-val">31%</div><div class="kpi-change">Index coverage ratio</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Technical Issues — Full List</div></div>
+
+    <div class="issue-row">
+      <div class="issue-icon red">1</div>
+      <div class="issue-body">
+        <div class="issue-title">Crawled – Not Indexed Count Rising (+202%)</div>
+        <div class="issue-desc">Google is crawling more of your pages but indexing fewer of them. This is a direct content quality signal from Google's algorithms. 127 pages now stuck in this state vs 42 three months ago.</div>
+        <div class="issue-fix">→ Full content audit. Identify thin pages, duplicate intent, missing E-E-A-T. Improve or consolidate. Use URL Inspection to resubmit improved pages.</div>
+        <div class="issue-meta"><span class="badge badge-red">Critical</span><span class="badge badge-red">127 pages</span><span class="badge badge-red">Content Quality</span></div>
+      </div>
+    </div>
+
+    <div class="issue-row">
+      <div class="issue-icon red">2</div>
+      <div class="issue-body">
+        <div class="issue-title">Canonical Tag Conflicts — 139 Pages Excluded</div>
+        <div class="issue-desc">139 pages are being excluded because they point to a canonical that Google respects. While this has improved dramatically (from 520), the remaining 139 may contain misrouted canonicals pointing to wrong pages, or genuine duplicate content needing architectural decisions.</div>
+        <div class="issue-fix">→ Crawl all 139 pages with Screaming Frog. Check canonical chain. Fix self-referencing vs cross-referencing canonicals. Decide: consolidate, redirect, or correct the canonical target.</div>
+        <div class="issue-meta"><span class="badge badge-red">Critical</span><span class="badge badge-amber">139 pages</span><span class="badge badge-red">Indexing Loss</span></div>
+      </div>
+    </div>
+
+    <div class="issue-row">
+      <div class="issue-icon amber">3</div>
+      <div class="issue-body">
+        <div class="issue-title">54 Broken URLs (404) Consuming Crawl Budget</div>
+        <div class="issue-desc">404 pages waste Googlebot crawl budget and may break internal link authority flows. Each crawl visit to a dead URL is a missed opportunity to crawl a live, valuable page.</div>
+        <div class="issue-fix">→ Export 404 list from GSC. Implement 301 redirects to nearest relevant live page. Update all internal links pointing to dead URLs. Submit sitemap after fixing.</div>
+        <div class="issue-meta"><span class="badge badge-amber">High</span><span class="badge badge-blue">54 pages</span><span class="badge badge-amber">Crawl Budget</span></div>
+      </div>
+    </div>
+
+    <div class="issue-row">
+      <div class="issue-icon amber">4</div>
+      <div class="issue-body">
+        <div class="issue-title">robots.txt Blocking 60 Pages — Verify Intentionality</div>
+        <div class="issue-desc">Robots.txt previously spiked to 82 blocked pages before settling at 60. This suggests a change was made that accidentally blocked pages, then partially reversed. Risk of valuable pages still being blocked.</div>
+        <div class="issue-fix">→ Test all 60 URLs against robots.txt rules using Google's robots.txt tester. Verify each block is intentional. Remove any Disallow rules that catch important pages. Never block CSS/JS resources.</div>
+        <div class="issue-meta"><span class="badge badge-amber">High</span><span class="badge badge-blue">60 pages</span><span class="badge badge-amber">Robots.txt</span></div>
+      </div>
+    </div>
+
+    <div class="issue-row">
+      <div class="issue-icon blue">5</div>
+      <div class="issue-body">
+        <div class="issue-title">22 Pages with noindex — Audit for Errors</div>
+        <div class="issue-desc">22 pages are explicitly excluded via noindex. These may include legitimate exclusions (thank you pages, login, internal search) but risk of CMS-level errors accidentally noindexing category or content pages.</div>
+        <div class="issue-fix">→ Export full list from GSC Coverage report. Cross-check each URL against CMS settings. Remove noindex from any accidentally tagged content pages.</div>
+        <div class="issue-meta"><span class="badge badge-blue">Medium</span><span class="badge badge-green">22 pages</span><span class="badge badge-blue">Noindex</span></div>
+      </div>
+    </div>
+
+    <div class="issue-row">
+      <div class="issue-icon blue">6</div>
+      <div class="issue-body">
+        <div class="issue-title">Low Index Coverage Ratio — 31% Only</div>
+        <div class="issue-desc">Only 196 of ~628 detected pages are indexed. A healthy site should have 65–80% of intentional pages indexed. Current 31% ratio means massive organic traffic potential is completely invisible to Google.</div>
+        <div class="issue-fix">→ After fixing all above issues, re-assess the index ratio. Target 70%+ within 90 days. Build internal links to orphaned indexable pages. Submit updated XML sitemap with only indexable URLs.</div>
+        <div class="issue-meta"><span class="badge badge-blue">Medium</span><span class="badge badge-amber">Site-wide</span><span class="badge badge-blue">Coverage</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ACTION PLAN ─── -->
+<div id="actionplan" class="section">
+  <div class="topbar">
+    <div><h1>30-Day <span>Action Plan</span></h1><div style="font-size:13px;color:var(--text3);margin-top:4px">Prioritized fixes for maximum indexing recovery</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Week 1 — Emergency Fixes</div></div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-num">1</div><div class="tl-content"><h4>robots.txt Audit</h4><p>Test all 60 blocked URLs. Remove any accidental Disallow rules. Ensure CSS/JS not blocked. Verify intentional blocks only.</p></div></div>
+        <div class="tl-item"><div class="tl-num">2</div><div class="tl-content"><h4>404 Redirect Sprint</h4><p>Implement 301 redirects for all 54 broken URLs. Update internal links. Submit sitemap. Recover link equity immediately.</p></div></div>
+        <div class="tl-item"><div class="tl-num">3</div><div class="tl-content"><h4>noindex Tag Audit</h4><p>Review all 22 noindex pages. Identify any accidental tags. Remove noindex from content/category pages. Resubmit for indexing.</p></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Week 2–3 — Content Quality</div></div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-num">4</div><div class="tl-content"><h4>Crawled-Not Indexed Audit</h4><p>Export all 127 URLs. Analyse content quality, word count, uniqueness, E-E-A-T. Flag thin pages for improvement or consolidation.</p></div></div>
+        <div class="tl-item"><div class="tl-num">5</div><div class="tl-content"><h4>Content Improvement Sprint</h4><p>Improve top 30 priority pages from the crawled-not-indexed list. Add depth, unique insights, author signals, internal links.</p></div></div>
+        <div class="tl-item"><div class="tl-num">6</div><div class="tl-content"><h4>Canonical Tag Audit</h4><p>Crawl all 139 canonical-excluded pages. Fix misrouted canonicals. Decide consolidate vs redirect vs keep for each URL.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Week 4 — Indexing Push</div></div>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-num">7</div><div class="tl-content"><h4>URL Inspection Submissions</h4><p>After improving content, submit all fixed pages via GSC URL Inspection tool. Prioritize pages with existing impression data.</p></div></div>
+      <div class="tl-item"><div class="tl-num">8</div><div class="tl-content"><h4>XML Sitemap Rebuild</h4><p>Rebuild sitemap to include only indexable, canonical URLs. Remove 404s, noindex, and redirected URLs. Resubmit in GSC.</p></div></div>
+      <div class="tl-item"><div class="tl-num">9</div><div class="tl-content"><h4>Internal Linking Audit</h4><p>Ensure all improved pages have 3+ internal links from high-authority pages. Fix orphan pages. This signals priority to Googlebot.</p></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Expected Outcomes — 30 Days</div></div>
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-label">Indexed Pages Target</div><div class="kpi-val">280+</div><div class="kpi-change">From current 196</div></div>
+      <div class="kpi amber"><div class="kpi-label">404s to Resolve</div><div class="kpi-val">54</div><div class="kpi-change">All with 301 redirects</div></div>
+      <div class="kpi blue"><div class="kpi-label">Coverage Ratio Target</div><div class="kpi-val">45%+</div><div class="kpi-change">From current 31%</div></div>
+      <div class="kpi green"><div class="kpi-label">Crawled-NI Target</div><div class="kpi-val">&lt;80</div><div class="kpi-change">From current 127</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── ROADMAP ─── -->
+<div id="roadmap" class="section">
+  <div class="topbar">
+    <div><h1>90-Day Growth <span>Roadmap</span></h1><div style="font-size:13px;color:var(--text3);margin-top:4px">Strategic organic growth plan</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Month 1 — Foundation Recovery</div></div>
+      <div class="issue-row"><div class="issue-icon green">✓</div><div class="issue-body"><div class="issue-title">Fix all technical blockers</div><div class="issue-desc">robots.txt, 404 redirects, noindex audit. Get low-hanging pages indexed immediately. Target: 250+ indexed pages.</div></div></div>
+      <div class="issue-row"><div class="issue-icon amber">⟳</div><div class="issue-body"><div class="issue-title">Content quality emergency</div><div class="issue-desc">Address the 127 crawled-not-indexed pages. Improve content depth, add E-E-A-T signals, consolidate thin pages.</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Month 2 — Coverage Expansion</div></div>
+      <div class="issue-row"><div class="issue-icon blue">◈</div><div class="issue-body"><div class="issue-title">Canonical architecture cleanup</div><div class="issue-desc">Resolve all 139 canonical-excluded pages. Make indexing vs canonical decisions for every URL. Target: 320+ indexed.</div></div></div>
+      <div class="issue-row"><div class="issue-icon blue">◉</div><div class="issue-body"><div class="issue-title">Internal linking overhaul</div><div class="issue-desc">Build topic clusters. Ensure all valuable pages have contextual internal links. Improve crawl paths for Googlebot.</div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Month 3 — Authority & Growth</div></div>
+    <div class="grid2">
+      <div>
+        <div class="issue-row"><div class="issue-icon green">↑</div><div class="issue-body"><div class="issue-title">Content gap attack</div><div class="issue-desc">With technical issues resolved, focus on creating new content targeting queries where your site shows impressions but gets no clicks. These are the highest-ROI content opportunities.</div></div></div>
+        <div class="issue-row"><div class="issue-icon amber">★</div><div class="issue-body"><div class="issue-title">Page experience optimisation</div><div class="issue-desc">Once pages are indexed, monitor Core Web Vitals in GSC. Address any CLS, LCP, or INP issues surfaced. Better page experience = better rankings.</div></div></div>
+      </div>
+      <div>
+        <div class="issue-row"><div class="issue-icon blue">◆</div><div class="issue-body"><div class="issue-title">Structured data / Schema</div><div class="issue-desc">Add appropriate schema markup to indexed pages (Article, FAQ, Product, Organization). Rich results improve CTR from search — often more impactful than rank improvements.</div></div></div>
+        <div class="issue-row"><div class="issue-icon green">▲</div><div class="issue-body"><div class="issue-title">Target: 400+ indexed pages</div><div class="issue-desc">90-day goal is to go from 196 indexed → 400+ indexed. This represents ~2x organic traffic potential assuming current CTR maintains.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:rgba(0,255,136,0.3)">
+    <div class="card-header"><div class="card-title" style="color:var(--green)">Top 5 Highest ROI Actions — Ranked</div></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Action</th><th>Effort</th><th>Impact</th><th>Expected Gain</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--green);font-weight:800;font-size:16px">1</td><td class="td-main">Fix crawled-not-indexed (content audit + improve)</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-red">Critical</span></td><td style="color:var(--green);font-weight:600">+50–100 indexed pages</td></tr>
+          <tr><td style="color:var(--amber);font-weight:800;font-size:16px">2</td><td class="td-main">Resolve canonical conflicts (139 pages)</td><td><span class="badge badge-amber">Medium</span></td><td><span class="badge badge-red">High</span></td><td style="color:var(--green);font-weight:600">+80–120 indexed pages</td></tr>
+          <tr><td style="color:var(--amber);font-weight:800;font-size:16px">3</td><td class="td-main">Set up 301 redirects for all 54 x 404 URLs</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-amber">Medium</span></td><td style="color:var(--green);font-weight:600">Link equity recovery</td></tr>
+          <tr><td style="color:var(--blue);font-weight:800;font-size:16px">4</td><td class="td-main">Audit robots.txt for 60 blocked pages</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-amber">Medium</span></td><td style="color:var(--green);font-weight:600">+10–30 indexed pages</td></tr>
+          <tr><td style="color:var(--blue);font-weight:800;font-size:16px">5</td><td class="td-main">Remove accidental noindex tags (22 pages)</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-blue">Medium</span></td><td style="color:var(--green);font-weight:600">+15–20 indexed pages</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+function showSection(id, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+let isDark = false;
+function toggleTheme(){
+  isDark = !isDark;
+  document.body.classList.toggle('dark', isDark);
+  document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+  document.getElementById('themeLabel').textContent = isDark ? 'Light' : 'Dark';
+  updateCharts();
+}
+
+const labels=["Jan 31","Feb 7","Feb 14","Feb 21","Feb 28","Mar 7","Mar 14","Mar 21","Mar 28","Apr 4","Apr 11","Apr 18"];
+const total=[787,789,787,788,805,803,775,747,703,658,500,439];
+const alt=[520,519,512,481,486,476,458,435,397,360,235,171];
+const crawled=[42,44,46,83,78,81,84,87,90,98,93,119];
+const notfound=[123,122,122,122,121,122,117,112,103,89,70,58];
+const blocked=[65,67,67,69,77,82,79,76,76,72,70,66];
+
+function getChartColors(){
+  return isDark
+    ? {grid:'rgba(255,255,255,0.05)', tick:'#5A5A78'}
+    : {grid:'rgba(0,0,0,0.06)', tick:'#9098B0'};
+}
+
+function makeScales(){
+  const c = getChartColors();
+  return {
+    x:{ticks:{color:c.tick,font:{size:11}},grid:{color:c.grid}},
+    y:{ticks:{color:c.tick,font:{size:11}},grid:{color:c.grid}}
+  };
+}
+
+const trendChart = new Chart(document.getElementById('trendChart'),{
+  type:'line',
+  data:{labels,datasets:[
+    {label:'Total',data:total,borderColor:'#E8334A',borderWidth:2.5,tension:0.3,fill:false,pointRadius:3,pointBackgroundColor:'#E8334A'},
+    {label:'Alt.Canonical',data:alt,borderColor:'#D48B00',borderWidth:2,tension:0.3,fill:false,pointRadius:2,pointBackgroundColor:'#D48B00'},
+    {label:'Crawled-NI',data:crawled,borderColor:'#1A6FCC',borderWidth:2,tension:0.3,fill:false,pointRadius:2,pointBackgroundColor:'#1A6FCC'},
+    {label:'404s',data:notfound,borderColor:'#00A85A',borderWidth:2,tension:0.3,fill:false,pointRadius:2,pointBackgroundColor:'#00A85A'},
+    {label:'Blocked',data:blocked,borderColor:'#7C3DBF',borderWidth:1.5,tension:0.3,fill:false,pointRadius:2,borderDash:[4,4],pointBackgroundColor:'#7C3DBF'},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:makeScales()}
+});
+
+const donutChart = new Chart(document.getElementById('donutChart'),{
+  type:'doughnut',
+  data:{
+    labels:['Alt.Canonical','Crawled-NI','Blocked','404 Errors','Noindex','Other'],
+    datasets:[{data:[139,127,60,54,22,2],backgroundColor:['#D48B00','#E8334A','#7C3DBF','#1A6FCC','#00A85A','#9098B0'],borderWidth:0,hoverOffset:6}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} pages`}}}}
+});
+
+const crawledChart = new Chart(document.getElementById('crawledChart'),{
+  type:'line',
+  data:{labels,datasets:[{
+    label:'Crawled-Not Indexed',data:crawled,
+    borderColor:'#E8334A',borderWidth:2.5,tension:0.3,
+    fill:true,backgroundColor:'rgba(232,51,74,0.08)',
+    pointRadius:4,pointBackgroundColor:'#E8334A'
+  }]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{...makeScales(),y:{...makeScales().y,min:0}}}
+});
+
+function updateCharts(){
+  const darkColors = {
+    trend:['#FF4D6A','#FFB800','#4D9EFF','#00FF88','#B87FFF'],
+    donut:['#FFB800','#FF4D6A','#B87FFF','#4D9EFF','#00FF88','#5A5A78'],
+    crawled:'#FF4D6A', crawledBg:'rgba(255,77,106,0.08)'
+  };
+  const lightColors = {
+    trend:['#E8334A','#D48B00','#1A6FCC','#00A85A','#7C3DBF'],
+    donut:['#D48B00','#E8334A','#7C3DBF','#1A6FCC','#00A85A','#9098B0'],
+    crawled:'#E8334A', crawledBg:'rgba(232,51,74,0.08)'
+  };
+  const c = isDark ? darkColors : lightColors;
+  const sc = makeScales();
+
+  trendChart.data.datasets.forEach((ds,i)=>{ds.borderColor=c.trend[i];ds.pointBackgroundColor=c.trend[i]});
+  trendChart.options.scales = sc;
+  trendChart.update();
+
+  donutChart.data.datasets[0].backgroundColor = c.donut;
+  donutChart.update();
+
+  crawledChart.data.datasets[0].borderColor = c.crawled;
+  crawledChart.data.datasets[0].backgroundColor = c.crawledBg;
+  crawledChart.data.datasets[0].pointBackgroundColor = c.crawled;
+  crawledChart.options.scales = {...sc, y:{...sc.y, min:0}};
+  crawledChart.update();
+}
+</script>
+</body>
+</html>
